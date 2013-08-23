@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Yaml;
 
 class ConvertCommand extends ContainerAwareCommand
@@ -39,8 +40,11 @@ EOT
         $bundleNamespace = $bundle->getNamespace();
         $oberFilePath = $bundle->getPath() . '/Resources/config/ober/er.edm';
         $outputFilePath = $bundle->getPath() . '/Resources/config/doctrine';
+        $mergeYmlFilePath = $bundle->getPath() . '/Resources/config/ober/merge/';
+        $mergeAddYmlFilePath = $bundle->getPath() . '/Resources/config/ober/merge/add/';
+        $mergeDeleteYmlFilePath = $bundle->getPath() . '/Resources/config/ober/merge/delete/';
 
-        $fs = new Filesystem();
+            $fs = new Filesystem();
         if(!$fs->exists($oberFilePath)){
             $output->writeln(sprintf('"<info>%s</info>" file does not exist.', $oberFilePath));
             return;
@@ -59,10 +63,46 @@ EOT
 
         foreach($ret as $key => $value)
         {
+            $yamlParser = new Parser();
+
+            $deleteYamlFilePath = $mergeDeleteYmlFilePath . $key . '.yml';
+            if(file_exists($deleteYamlFilePath)){
+                $temp = $yamlParser->parse(file_get_contents($deleteYamlFilePath));
+                $this->deleteArray($value, $temp);
+            }
+
+            $addYamlFilePath = $mergeAddYmlFilePath . $key . '.yml';
+            if(file_exists($addYamlFilePath)){
+                $temp = $yamlParser->parse(file_get_contents($addYamlFilePath));
+                $value = array_merge_recursive($value, $temp);
+            }
+
             $yaml = Yaml::dump($value, 10);
             $outputfile = $outputFilePath.'/'.$key.'.orm.yml';
             file_put_contents($outputfile, $yaml);
             $output->writeln(sprintf(' > generate "<info>%s</info>"', $outputfile));
+        }
+
+    }
+
+    private function deleteArray(&$data, $deleteArray)
+    {
+        foreach($data as $key => $value)
+        {
+            if(!isset($deleteArray[$key]))
+            {
+                continue;
+            }
+
+            if(is_array($data[$key]))
+            {
+                self::deleteArray($data[$key], $deleteArray[$key]);
+            }else{
+                if($data[$key] === $deleteArray[$key])
+                {
+                    unset($data[$key]);
+                }
+            }
         }
 
     }

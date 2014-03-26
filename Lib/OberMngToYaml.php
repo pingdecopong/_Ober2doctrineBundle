@@ -43,7 +43,7 @@ class OberMngToYaml
 //                echo "Index execute\n";
                 /* @var $value \Arte\Ober2doctrineBundle\Entity\OberIndex */
 
-                if($value->getType() == 0){
+                if($value->getType() != 3){
                     continue;
                 }
 
@@ -58,6 +58,32 @@ class OberMngToYaml
 //                    echo "***indexs***\n";
                     /* @var $indexValue \Arte\Ober2doctrineBundle\Entity\OberAttribute */
                     $ret[$entityName][$entityNameFullPath]["indexes"][$indexPhysicalName]["columns"][] = $indexValue->getPhysicalName();
+                }
+            }
+            
+            //uniqueConstraints
+            $ret[$entityName][$entityNameFullPath]["uniqueConstraints"] = array();
+            $indexes = $entity->getIndexes();
+            foreach($indexes as $key => $value)
+            {
+//                echo "Index execute\n";
+                /* @var $value \Arte\Ober2doctrineBundle\Entity\OberIndex */
+
+                if($value->getType() != 1){
+                    continue;
+                }
+
+                $indexPhysicalName = $value->getPhysicalName();
+//                echo $indexPhysicalName."\n";
+                $ret[$entityName][$entityNameFullPath]["uniqueConstraints"][$indexPhysicalName] = array();
+                $ret[$entityName][$entityNameFullPath]["uniqueConstraints"][$indexPhysicalName]["columns"] = array();
+
+                $indexColumns = $value->getColumns();
+                foreach($indexColumns as $indexKey => $indexValue)
+                {
+//                    echo "***indexs***\n";
+                    /* @var $indexValue \Arte\Ober2doctrineBundle\Entity\OberAttribute */
+                    $ret[$entityName][$entityNameFullPath]["uniqueConstraints"][$indexPhysicalName]["columns"][] = $indexValue->getPhysicalName();
                 }
             }
 
